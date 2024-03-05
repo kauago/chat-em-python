@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat em Tempo Real</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+        }
+
+        form {
+            margin-top: 20px;
+            display: flex;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat em Tempo Real</h1>
+        <div class="chat-container" id="message-container"></div>
+        <form id="message-form">
+            <input type="text" name="message" placeholder="Digite sua mensagem..." autofocus>
+            <input type="submit" value="Enviar">
+        </form>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+            var username = prompt('Digite seu nome de usuário:');
+            var room = prompt('Digite o nome da sala:');
+
+            socket.emit('join', {'username': username, 'room': room});
+
+            socket.on('message', function(data) {
+                if (data.room === room) {
+                    $('#message-container').empty();
+                    $.each(data.messages, function(index, message) {
+                        $('#message-container').append($('<p>').text(message.username + ': ' + message.message));
+                    });
+                }
+            });
+
+            $('#message-form').submit(function(e) {
+                e.preventDefault();
+                var message = $('input[name="message"]').val();
+                socket.send({'username': username, 'room': room, 'message': message});
+                $('input[name="message"]').val('');
+            });
+
+            $(window).on('beforeunload', function() {
+                socket.emit('leave', {'username': username, 'room': room});
+            });
+        });
+    </script>
+</body>
+</html>
